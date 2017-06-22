@@ -1,0 +1,11 @@
+-- api
+http://jboss-javassist.github.io/javassist/html/index.html
+
+-- tutorial
+http://jboss-javassist.github.io/javassist/tutorial/tutorial.html
+
+-- github
+https://github.com/spccold/javaassist-for-springaop/tree/master/src/main/java/com/geek/javaassist
+
+--massapi
+http://www.massapi.com/class/ct/CtConstructor-1.html
