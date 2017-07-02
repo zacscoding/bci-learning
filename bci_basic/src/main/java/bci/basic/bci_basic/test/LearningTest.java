@@ -14,9 +14,9 @@ import step1.readandwrite.domain.TestDomain;
 public class LearningTest {
 	
 	public void ApiTest() throws Exception {
-		//parameterTest();
-		
-		insertTest();
+		// parameterTest();		
+		// insertTest();
+		insertMethodLocation();
 	}
 	
 	
@@ -29,6 +29,40 @@ public class LearningTest {
 	
 	
 	//////////////////////////////////////////
+	// insert method before , after, finally
+	//////////////////////////////////////////
+	public void insertMethodLocation() throws Exception {
+		TestClass clazz = (TestClass)(transformClass2().newInstance());
+		clazz.insertTest();
+	}
+	
+	public Class transformClass2() throws Exception {
+		ClassPool pool = ClassPool.getDefault();
+		CtClass ctClass = pool.get("bci.basic.bci_basic.test.TestClass");
+		CtMethod[] ctMethods = ctClass.getDeclaredMethods();		
+		for( CtMethod ctMethod : ctMethods ) {			
+			if( ctMethod.getName().contains("insertTest")) {
+				
+				String displayThread = "bci.basic.bci_basic.util.JavaCodeUtils.displayCurrentThread();";
+				String beforeCode = "System.out.print(\"" + "dynamic before" + "\");";
+				beforeCode += displayThread;
+				String afterCode = "System.out.print(\"" + "dynamic after" + "\");";
+				afterCode += displayThread;
+				String finallyCode = "System.out.print(\"" + "dynamic finally" + "\");";
+				finallyCode += displayThread;
+				ctMethod.insertBefore(beforeCode);
+				ctMethod.insertAfter(afterCode,false);
+				ctMethod.insertAfter(finallyCode,true);				
+			}					
+		}
+		ctClass.writeFile();
+		return ctClass.toClass();
+	}
+	
+	
+	
+	
+	//////////////////////////////////////////
 	// insert method info
 	//////////////////////////////////////////	
 	public void insertTest() throws Exception {
@@ -37,6 +71,10 @@ public class LearningTest {
 		vo.setName("test");
 		vo.testMethod("test", "hi", 1, 10L);
 	}
+	
+	
+	
+	
 	
 	public Class transformClass() throws Exception {
 		ClassPool pool = ClassPool.getDefault();

@@ -1,6 +1,15 @@
 package bci.basic.bci_basic.util;
 
+import java.io.PrintStream;
+
 public class JavaCodeUtils {
+	public static final PrintStream out = System.out;
+	
+	public static void displayCurrentThread() {
+		out.println("\t#[thread name : " + Thread.currentThread().getName() + ", id : " +
+				Thread.currentThread().getId() + " ]");
+	}
+	
 	public static String getPrintlnCode(Object inst) {
 		return combineStrings("System.out.println(\""
 							, nullCheckForToString(inst)

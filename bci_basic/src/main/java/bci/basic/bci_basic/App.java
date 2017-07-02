@@ -15,8 +15,7 @@ public class App {
         	// =================================
         	// Test Api
         	// =================================
-        	learningApi();
-        	
+        	learningApi();        	
         } catch(Exception e) {
         	e.printStackTrace();
         	System.exit(1);
