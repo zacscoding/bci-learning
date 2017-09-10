@@ -12,7 +12,7 @@ public class ClassPrinterRunner {
         // ClassReader cr = new ClassReader("java.lang.Runnable");
         //ClassLoader cl = Thread.currentThread().getContextClassLoader();
         ClassLoader cl = ClassPrinterRunner.class.getClassLoader();
-        ClassReader cr = new ClassReader(cl.getResourceAsStream(className.replace('.','/') + ".class"));
-        cr.accept(cp, 0);
-    }
+        ClassReader cr = new ClassReader(cl.getResourceAsStream(className.replace('.','/') + ".class"));        
+        cr.accept(cp, 0);        
+    }    
 }

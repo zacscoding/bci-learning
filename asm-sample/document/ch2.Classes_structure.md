@@ -15,6 +15,12 @@
 - <a href="#8">2.2.4 Transforming classes</a>
 - <a href="#9">2.2.5 Removing class members</a>
 - <a href="#10">2.6.6 Adding class members</a>
+- <a href="#11">2.2.7 Transforming chains</a>
+- <a href="#12">2.3.1 Type</a>
+- <a href="#13">2.3.2 TraceClassVisitor</a>
+- <a href="#14">2.3.3 CheckClassAdapter</a>
+- <a href="#15">2.3.4 ASMifier</a>
+
 
 ## structure
 
@@ -673,22 +679,219 @@ public class RemoveMethodAdapter extends ClassVisitor implements Opcodes {
 <div id="10"></div>
 
 ### 2.6.6 Adding class members
+; visitXxx를 통해 동적으로 멤버 삽입 가능  
+(visit, visitSource, visitOuterClass, visitAnnotation, visitAttribute 에는 넣지 못함  
+this may result in a call to visitField followed by visitSource, visitOuterClass,   
+visitAnnotation or visitAttribute, which is not valid.)  
+
+**Note** : 새로운 멤버들을 삽입하는 것은 visitEnd 메소드를 이용하는 것  
+(이름 중복 등등)
+
+
+> Generate Member Field
+
+<pre>
+public class AddFieldAdatper extends ClassVisitor implements Opcodes {
+    private int fAcc;
+    private String fName;
+    private String fDesc;
+    private boolean isFieldPresent;
+
+    public AddFieldAdatper(ClassVisitor cv, int fAcc, String fName, String fDesc) {
+        super(ASM5, cv);
+        this.fAcc = fAcc;
+        this.fName = fName;
+        this.fDesc = fDesc;
+    }
+
+    @Override
+    public FieldVisitor visitField(int access, String name, String desc, String signature, Object value) {
+        // check duplicate field name
+        if(name.equals(fName)) {
+            isFieldPresent = true;
+        }
+
+        return cv.visitField(access, name, desc, signature, value);
+    }
+
+    @Override
+    public void visitEnd() {
+        if(!isFieldPresent) {
+            FieldVisitor fv = cv.visitField(fAcc, fName, fDesc, null, null);
+            if(fv != null) {
+                fv.visitEnd();
+            }
+        }
+        cv.visitEnd();
+    }
+}
+</pre>
+
+> Add field runner
+
+<pre>
+public class AddFieldRunner extends ClassLoader {    
+    public static void main(String[] args) throws IOException {
+        // add field member
+        String className = "com.asm_sample.document.ch2.domain.TestClass";
+
+        ClassLoader loader = AddFieldAdatper.class.getClassLoader();
+        ClassReader cr = new ClassReader(loader.getResourceAsStream(className.replace('.', '/') + ".class"));
+        ClassWriter cw = new ClassWriter(cr, 0);
+        AddFieldAdatper addFieldAdapter = new AddFieldAdatper(cw, Opcodes.ACC_PRIVATE, "addedField","Ljava/lang/String;");
+        cr.accept(addFieldAdapter, 0);
+        byte[] bytes = cw.toByteArray();
+
+        //  check
+        Class<?> clazz = new AddFieldRunner().defineClass(className, bytes, 0, bytes.length);
+        Field[] fields = clazz.getDeclaredFields();
+        for(Field field : fields) {
+            CustomLogger.println("## name : {} , type : {}", field.getName() , field.getType());
+        }
+    }
+}
+</pre>
+
+
+> result
+
+<pre>
+visitField() :: access :2, name : age , desc : I , signature : null, value : null
+visitField() :: access :2, name : name , desc : Ljava/lang/String; , signature : null, value : null
+name : age , type : int
+name : name , type : class java.lang.String
+name : addedField , type : class java.lang.String
+</pre>
+
+=> visitField를 이용하지 않음(원래 멤버필드를 변경하거나 삭제하지 않기 위해)  
+=> visitField에서 null을 반환할 수도있으므로, if(fv!=null) check
 
 
 
 
+<div id="11"></div>
+
+### 2.2.7 Transforming chains
+
+> ??? document 2.2.7 보기
+
+<pre>
+public class MultiClassAdapter extends ClassVisitor {
+    protected ClassVisitor[] cvs;
+    public MultiClassAdapter(ClassVisitor[] cvs) {
+        super(Opcodes.ASM5);
+        this.cvs = cvs;
+    }
+
+    @Override
+    public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
+        for(ClassVisitor cv : cvs) {
+            cv.visit(version, access, name, signature, superName, interfaces);
+        }
+    }
+}
+</pre>
+
+---
+
+## 2.3 Tools
+; org.objectweb.asm.util 패키지에서 몇가지 툴을 제공함
+
+![complex transformation chain](./pics/[pic2-8]complex_transformation_chain.png)
+
+<div id="12"><div>
+
+### 2.3.1 Type
+; internal name or type descriptor를 확인해서 더욱 안정성 높임
+
+> Type example
+
+<pre>
+import org.objectweb.asm.Type;
+
+import com.asm_sample.util.CustomLogger;
+
+public class TypeCheck {
+    public static void main(String[] args) {        
+        CustomLogger.println("Type.INT_TYPE : {}, Type.getType(String.class) : {}, Type.getType(String.class).getInternalName() : {} "
+                ,new Object[]{Type.INT_TYPE, Type.getType(String.class), Type.getType(String.class).getInternalName()});
+
+        CustomLogger.println("Type.getType(String.class).getDescriptor() : {}"
+                , new Object[]{Type.getType(String.class).getDescriptor()});
+    }
+}
+
+Type.INT_TYPE : I, Type.getType(String.class) : Ljava/lang/String;, Type.getType(String.class).getInternalName() : java/lang/String
+Type.getType(String.class).getDescriptor() : Ljava/lang/String;
+</pre>
+
+---
+
+<div id="13"><div>
+
+### 2.3.2 TraceClassVisitor
+; ClassWriter는 byte를 반환하므로 사람이 해석X => TraceClassVisitor를 이용
+
+> TraceClassVisitor example
+
+<pre>
+import org.objectweb.asm.util.TraceClassVisitor;
+
+public class TraceClassVisitorRunner {
+    public static void main(String[] args) throws IOException {
+        ClassWriter cw = new ClassWriter(0);
+        TraceClassVisitor cv = new TraceClassVisitor(cw, new PrintWriter(System.out));
+        ClassReader cr = new ClassReader("java.lang.Runnable");
+        cr.accept(cv, 0);
+    }
+}
+</pre>
+
+> result
+
+<pre>
+// class version 52.0 (52)
+// access flags 0x601
+public abstract interface java/lang/Runnable {
 
 
+  @Ljava/lang/FunctionalInterface;()
 
+  // access flags 0x401
+  public abstract run()V
+}
+</pre>
 
+---
 
+<div id="14"></div>
 
+### 2.3.3 CheckClassAdapter
 
+=> ClassWrite는 오류를 체크하지 않음  
+=> 오류가 존재하는 코드 생성 가능  
+=> 자바 가상 머신 verifier에서 오류 발생 할 수 있음  
 
+=> TraceClassVisitor와 같이 모든 메소드 호출을 위임하지만,  
+다음 visitor를 호출하기 전에 메소드가 적절한 순서로 호출 되었는지,  
+유효한 args인지, 등등 체크
+(IllegalStateException or IllegalArgumentException 던짐)
 
+> CheckClassAdapter example
 
+<pre>
+ClassWriter cw = new ClassWriter(0);
+TraceClassVisitor tcv = new TraceClassVisitor(cw, printWriter);
+CheckClassAdapter cv = new CheckClassAdapter(tcv);
+cv.visit(...);
+...
+cv.visitEnd();
+byte b[] = cw.toByteArray();
+</pre>
 
+---
 
+<div id="15"></div>
 
-<br /><br /><br /><br /><br />
-p
+### 2.3.4 ASMifier
+;P35 다시 하기
