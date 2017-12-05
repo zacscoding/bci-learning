@@ -17,7 +17,6 @@
 ( 선수지식 :: Java Virtual Machine Specification )  
 
 
-
 ### 3.1.1 Execution model
 
 ![execution stack](./pics/[pic-3.1]An_execution_stack_with_3_frames.png)
@@ -36,8 +35,78 @@
 A bytecode instruction 는 instruction을 식별하는 opcode &  
 arguments의 고정 된 숫자로 이루어짐
 
-/* AGAIN */ again!!  
-**위 설정 정리 하기**
+<table style="width:100%;">
+  <tr>
+    <th>Stack</th>
+    <td>
+      stack에 있는 values들을 manipulate 하는데 이용<br/>
+      POP : 스택의 최상위 값을 pop <br />
+      DUP : 스택의 최상위 값을 copy & push <br />
+      SWAP : 스택의 2값을 꺼내서 역순으로 변경      
+    </td>
+  </tr>
+  <tr>
+    <th>Constants</th>
+    <td>
+      operand stacck 위의 상수 값을 push <br />
+      ACONST_NULL : null값 push <br />
+      ICONST_0 : int 값 (0) push <br />
+      FCONST_0 (0f) // DCONST_0 (0d) <br />
+      BIPUSH b: byte value b push <br />
+      SIPUSH s : short value s push <br />
+      LDC cst : 임의 int,float, long, double, String OR Class constant cst       
+    </td>
+  </tr>
+  <tr>
+    <th>Arithmetic and logic</th>
+    <td>
+      operand stack에 있는 numeric values를 pop & combine 후 result push <br />
+      xADD(+) // xSUB(-) // xMUL(*) // xDIV(/) // xREM(%), where x is I,L,F or D <br />
+      int,long value에 대해 <<,>>,>>>,|,&,^가 존재
+    </td>
+  </tr>
+  <tr>
+    <th>Casts</th>
+    <td>
+      stack에서 pop & 다른 타입으로 변환 & push result <br />
+      I2F, F2D, L2D etc
+    </td>
+  </tr>
+  <tr>
+    <th>Objects</th>
+    <td>
+      object 만들고, lock tehm, test their type, etc <br />
+      (new 연산자의 경우 push a new object of type internal name on the stack)
+    </td>
+  </tr>
+  <tr>
+    <th>Fields</th>
+    <td>
+      field의 값을 읽거나 씀 <br />
+      GETFIELD : object ref를 pop & its name field에 BIPUSH <br />
+      PUTFIELD : value & object ref pop & its name field에 값을 저장 <br />
+      GETSTATIC, PUTSTATIC은 static 필드에 대해서만 다름
+    </td>
+  </tr>
+  <tr>
+    <th>Methods</th>
+    <td>
+      invoke method or constructor <br />
+    </td>
+  </tr>
+  <tr>
+    <th>Arrays</th>
+    <td></td>
+  </tr>
+  <tr>
+    <th>Jumps</th>
+    <td></td>
+  </tr>
+  <tr>
+    <th>Return</th>
+    <td></td>
+  </tr>
+</table>
 
 ---
 
@@ -172,6 +241,7 @@ catch:
 
 <div id="3.2.1"></div>
 ### 3.2.1 Presentation
+
 
 
 
