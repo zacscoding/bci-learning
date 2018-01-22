@@ -2,7 +2,7 @@
 
 #### Index
 
-- <a href=""> Document </a>
+- <a href="https://github.com/zacscoding/bci-learning/tree/master/asm-sample/document"> Document </a>
 - <a href="#use-tools"> Using tools </a>
 - <a href="#get-return-value"> Get return value </a>
 
@@ -13,7 +13,7 @@
 
 #### Index
 
-- <a href="signature"> Check Method signature </a>
+- <a href="#signature"> Check Method signature </a>
 - <a href="#ASMifer"> tools : ASMifer </a>
 - <a href="#TraceClassVisitor"> tools : TraceClassVisitor </a>
 
@@ -250,7 +250,7 @@ public class com/asm_sample/proxy/SampleTestClass {
 
 #### Get return value!
 
-[see source code](https://gist.github.com/ihoneymon/652be052a0727ad59601)
+[see source code](https://github.com/zacscoding/bci-learning/tree/master/asm-sample/src/main/java/com/asm_sample/agent/returncheck)
 
 
 > Target class :: ReturnCheckClass.java
