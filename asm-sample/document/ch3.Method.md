@@ -108,6 +108,16 @@ arguments의 고정 된 숫자로 이루어짐
   </tr>
 </table>
 
+- ILOAD  
+boolean, byte, char, short , int  
+- LLOAD  
+long
+- FLOAD / DLOAD    
+float / double
+- ALOAD  
+non primitive value
+- Symmetrically :: ISTORE, LSTORE, FSTORE, DSTORE, ASTORE
+
 ---
 
 ### 3.1.3. Examples

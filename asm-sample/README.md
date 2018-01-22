@@ -1,4 +1,15 @@
-# Test!!
+## ASM !!!
+
+#### Index
+
+- <a href=""> Document </a>
+- <a href="#use-tools"> Using tools </a>
+- <a href="#get-return-value"> Get return value </a>
+
+
+<div id="use-tools"></div>
+
+#### Using tools
 
 #### Index
 
@@ -233,5 +244,104 @@ public class com/asm_sample/proxy/SampleTestClass {
 }
 ```
 
-
 ---
+
+<div id="get-return-value"></div>
+
+#### Get return value!
+
+[see source code](https://gist.github.com/ihoneymon/652be052a0727ad59601)
+
+
+> Target class :: ReturnCheckClass.java
+
+```
+public class ReturnCheckClass {
+    public String getName(int param1, String param2) {
+        return param2 + param1;
+    }
+}
+```
+
+> Proxy :: ReturnCheckClass.java
+
+```
+public class ReturnCheckClass {
+    public String getName(int param1, String param2) {
+        int local1 = param1;
+        String local2 = param2;
+        ReturnCheckPrinter.displayLocalVariable("[check local variable]", param1, param2);
+        return param2 + param1;
+        // copy return value & get local1, local2
+        //ReturnCheckPrinter.displayReturnAndParam((param2 + param1), local1, local2);
+    }
+}
+```
+
+> Result :: new ReturnCheckClass().getName(1,"test");
+
+```
+## [ReturnCheckPrinter::displayLocalVariable is called] checkName : [check local variable], local1 : 1, local2 : test
+## [ReturnCheckPrinter::displayReturnAndParam is called] returnValue : test1 , arg1 : 1, arg2 : test
+```
+
+> ASM CODE!
+
+1. Apply visitCode() in MethodVisitor
+
+```
+class ReturnCheckClassProxyMV extends LocalVariablesSorter implements Opcodes {    
+    private int firstParamIdx, secondParamIdx;
+    ...
+    @Override
+    public void visitCode() {
+        // int firstParamIdxLocalVariable = first arg
+        mv.visitVarInsn(ILOAD, 1);
+        firstParamIdx = newLocal(Type.getType(int.class));
+        mv.visitVarInsn(ISTORE, firstParamIdx);
+
+        // String secondParamIdxLocalVariable = second arg
+        mv.visitVarInsn(ALOAD, 2);
+        secondParamIdx = newLocal(Type.getType(String.class));
+        mv.visitVarInsn(ASTORE, secondParamIdx);
+
+        // check local variable
+        mv.visitLdcInsn("[check local variable]");
+        mv.visitVarInsn(ILOAD, 1);
+        mv.visitVarInsn(ALOAD, 2);
+        mv.visitMethodInsn(Opcodes.INVOKESTATIC, "com/asm_sample/agent/returncheck/ReturnCheckPrinter", "displayLocalVariable", "(Ljava/lang/String;ILjava/lang/String;)V", false);
+        mv.visitCode();
+    }
+    ...
+}
+```
+
+2. Apply visitlnsn(int opcode)
+
+```
+class ReturnCheckClassProxyMV extends LocalVariablesSorter implements Opcodes {
+    private int firstParamIdx, secondParamIdx;
+    ...
+
+    @Override
+    public void visitInsn(int opcode) {
+        if ((opcode >= IRETURN && opcode <= RETURN)) {
+            // pop & copy from stack == Return Object
+            mv.visitInsn(Opcodes.DUP);
+            // first local variable
+            mv.visitVarInsn(Opcodes.ILOAD, firstParamIdx);
+            // second local variable
+            mv.visitVarInsn(Opcodes.ALOAD, secondParamIdx);
+            mv.visitMethodInsn(Opcodes.INVOKESTATIC, "com/asm_sample/agent/returncheck/ReturnCheckPrinter", "displayReturnAndParam", "(Ljava/lang/String;ILjava/lang/String;)V", false);
+        }
+        mv.visitInsn(opcode);
+    }
+    ...
+
+    // compare by using org.objectweb.asm.util.ASMifier class
+    @Override
+    public void visitMaxs(int maxStack, int maxLocals) {
+        mv.visitMaxs(maxStack +1, maxLocals + 2);
+    }
+}    
+```
