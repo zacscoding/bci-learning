@@ -1,6 +1,5 @@
 package com.asm_sample.agent.returncheck;
 
-import com.asm_sample.util.CustomLogger;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
@@ -24,11 +23,6 @@ public class ReturnChecClassProxy extends ClassVisitor implements Opcodes {
             return mv;
         }
 
-        if(name.startsWith("get") && desc.startsWith("(I)")) {
-            CustomLogger.println("## find target name : {} , desc : {}", name, desc);
-            return new ReturnCheckClassProxy2MV(access, desc, mv);
-        }
-
         if("getName".equals(name) && "(ILjava/lang/String;)Ljava/lang/String;".equals(desc)) {
             System.out.println("## find target");
             return new ReturnCheckClassProxyMV(access, desc, mv);
@@ -36,52 +30,6 @@ public class ReturnChecClassProxy extends ClassVisitor implements Opcodes {
         return mv;
     }
 }
-
-class ReturnCheckClassProxy2MV extends LocalVariablesSorter implements Opcodes {
-    private String paramDesc;
-    private Type returnType;
-    protected ReturnCheckClassProxy2MV(int access, String desc, MethodVisitor mv) {
-        super(ASM5, access, desc, mv);
-        returnType = Type.getReturnType(desc);
-        String returnDesc = returnType.getDescriptor();
-
-        if(returnDesc.length() == 1) {
-            paramDesc = "(" + returnDesc + ")Ljava/lang/String;";
-        }
-        else if(returnDesc.endsWith("String;")) {
-            paramDesc = null;
-        }
-        else {
-            paramDesc = "(Ljava/lang/Object;)Ljava/lang/String;";
-        }
-        System.out.println("paramDesc :: " + paramDesc);
-    }
-
-    @Override
-    public void visitInsn(int opcode) {
-        if ((opcode >= IRETURN && opcode <= RETURN)) {
-            switch(returnType.getSort()) {
-                case Type.LONG :
-                case Type.DOUBLE :
-                    mv.visitInsn(Opcodes.DUP2);
-                    break;
-                default :
-                    mv.visitInsn(Opcodes.DUP);
-            }
-            if(paramDesc != null) {
-                mv.visitMethodInsn(INVOKESTATIC, "java/lang/String", "valueOf", paramDesc, false);
-            }
-            mv.visitMethodInsn(INVOKESTATIC, "com/asm_sample/agent/returncheck/ReturnCheckPrinter", "displayReturn", "(Ljava/lang/String;)V", false);
-        }
-        mv.visitInsn(opcode);
-    }
-
-    @Override
-    public void visitMaxs(int maxStack, int maxLocals) {
-        mv.visitMaxs(maxStack +2, maxLocals);
-    }
-}
-
 
 class ReturnCheckClassProxyMV extends LocalVariablesSorter implements Opcodes {
     private int firstParamIdx, secondParamIdx;
@@ -125,7 +73,7 @@ class ReturnCheckClassProxyMV extends LocalVariablesSorter implements Opcodes {
 
     @Override
     public void visitMaxs(int maxStack, int maxLocals) {
-        mv.visitMaxs(maxStack +2, maxLocals + 2);
+        mv.visitMaxs(maxStack +1, maxLocals + 2);
     }
 }
 
