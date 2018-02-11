@@ -1,15 +1,17 @@
 package com.asm_sample;
 
-import jdk.internal.org.objectweb.asm.Type;
+import org.junit.Ignore;
 import org.junit.Test;
+import org.objectweb.asm.Type;
 
 /**
- * @author zaccoding
- * github : https://github.com/zacscoding
+ * @author zaccoding github : https://github.com/zacscoding
  * @Date : 2018-01-23
  */
 public class TypeTest {
+
     @Test
+    @Ignore
     public void test() {
         String desc = "(I)Ljava/lang/String;";
         Type returnType = Type.getReturnType(desc);
