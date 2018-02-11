@@ -16,6 +16,7 @@
 - <a href="#signature"> Check Method signature </a>
 - <a href="#ASMifer"> tools : ASMifer </a>
 - <a href="#TraceClassVisitor"> tools : TraceClassVisitor </a>
+- <a href="#CheckClassAdapter"> tools : CheckClassAdapter </a>
 
 <div id="signature"> </div>
 
@@ -244,6 +245,74 @@ public class com/asm_sample/proxy/SampleTestClass {
 }
 ```
 
+<div id="CheckClassAdapter"></div>
+
+> SampleTestClass.java  
+
+```
+public class SampleTestClass {
+    public String getName(String name, int age) {
+        String info = name + "(" + age + ")";
+        return name;
+    }
+}    
+```
+
+> CheckClassAdapterTest  
+
+```
+package com.asm_sample;
+
+import com.asm_sample.proxy.SampleTestClass;
+import org.junit.Before;
+import org.junit.Test;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.util.CheckClassAdapter;
+import org.objectweb.asm.util.TraceClassVisitor;
+
+import java.io.PrintWriter;
+
+public class CheckClassAdapterTest {
+    Class<?> clazz;
+    @Before
+    public void setUp() {
+        clazz = SampleTestClass.class;
+    }
+
+    @Test
+    public void test() throws Exception {
+        ClassReader cr = new ClassReader(clazz.getName());
+        ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+        ClassVisitor cv = cw;
+        PrintWriter pw = new PrintWriter(System.out);
+        CheckClassAdapter.verify(cr, true, pw);
+    }
+}
+
+```
+
+> Result
+
+```
+00000 SampleTestClass String I .  :  :     NEW java/lang/StringBuilder
+00001 SampleTestClass String I .  : StringBuilder  :     DUP
+00002 SampleTestClass String I .  : StringBuilder StringBuilder  :     INVOKESPECIAL java/lang/StringBuilder.<init> ()V
+00003 SampleTestClass String I .  : StringBuilder  :     ALOAD 1
+00004 SampleTestClass String I .  : StringBuilder String  :     INVOKEVIRTUAL java/lang/StringBuilder.append (Ljava/lang/String;)Ljava/lang/StringBuilder;
+00005 SampleTestClass String I .  : StringBuilder  :     LDC "("
+00006 SampleTestClass String I .  : StringBuilder String  :     INVOKEVIRTUAL java/lang/StringBuilder.append (Ljava/lang/String;)Ljava/lang/StringBuilder;
+00007 SampleTestClass String I .  : StringBuilder  :     ILOAD 2
+00008 SampleTestClass String I .  : StringBuilder I  :     INVOKEVIRTUAL java/lang/StringBuilder.append (I)Ljava/lang/StringBuilder;
+00009 SampleTestClass String I .  : StringBuilder  :     LDC ")"
+00010 SampleTestClass String I .  : StringBuilder String  :     INVOKEVIRTUAL java/lang/StringBuilder.append (Ljava/lang/String;)Ljava/lang/StringBuilder;
+00011 SampleTestClass String I .  : StringBuilder  :     INVOKEVIRTUAL java/lang/StringBuilder.toString ()Ljava/lang/String;
+00012 SampleTestClass String I .  : String  :     ASTORE 3
+00013 SampleTestClass String I String  :  :     ALOAD 1
+00014 SampleTestClass String I String  : String  :     ARETURN
+```
+
 ---
 
 <div id="get-return-value"></div>
@@ -344,4 +413,131 @@ class ReturnCheckClassProxyMV extends LocalVariablesSorter implements Opcodes {
         mv.visitMaxs(maxStack +1, maxLocals + 2);
     }
 }    
+```
+
+#### Get multiple types of return value !!
+
+> Target :: ReturnCheckClass  
+
+```
+public class ReturnCheckClass {
+    ...
+    public String getString(int idx) {
+        System.out.println("## ReturnCheckClass::getString() is called");
+        return "getStringResultValue@!";
+    }
+
+    public int getInt(int idx) {
+        System.out.println("## ReturnCheckClass::getInt() is called");
+        return 1;
+    }
+
+    public boolean getBoolean(int idx) {
+        System.out.println("## ReturnCheckClass::getBoolean() is called");
+        return true;
+    }
+
+    public long getLong(int idx) {
+        System.out.println("## ReturnCheckClass::getLong() is called");
+        return 2L;
+    }
+
+    public double getDouble(int idx) {
+        System.out.println("## ReturnCheckClass::getDouble() is called");
+        return 2F;
+    }
+    ...
+}
+```
+
+> Action  
+
+```
+ReturnCheckClass inst = new ReturnCheckClass();
+inst.getInt(1);
+inst.getBolean(1);
+inst.getString(1);
+```
+
+> Result
+
+```
+## ReturnCheckClass::getInt() is called
+## [ReturnCheckPrinter::displayReturn(String returnVale] returnValue : 1
+## ReturnCheckClass::getBoolean() is called
+## [ReturnCheckPrinter::displayReturn(String returnVale] returnValue : true
+## ReturnCheckClass::getString() is called
+## [ReturnCheckPrinter::displayReturn(String returnVale] returnValue : getStringResultValue@!
+## ReturnCheckClass::getLong() is called
+## [ReturnCheckPrinter::displayReturn(String returnVale] returnValue : 2
+## ReturnCheckClass::getDouble() is called
+## [ReturnCheckPrinter::displayReturn(String returnVale] returnValue : 2.0
+```
+
+> ASM  
+
+```
+class ReturnCheckClassProxy2MV extends LocalVariablesSorter implements Opcodes {
+    private String paramDesc;
+    private Type returnType;
+
+    protected ReturnCheckClassProxy2MV(int access, String desc, MethodVisitor mv) {
+        super(ASM5, access, desc, mv);
+        String returnDesc = Type.getReturnType(desc).getDescriptor();
+        if(returnDesc.length() == 1) {
+            paramDesc = "(" + returnDesc + ")Ljava/lang/String;";
+        }
+        else if(returnDesc.endsWith("String;")) {
+            paramDesc = null;
+        }
+        else {
+            paramDesc = "(Ljava/lang/Object;)Ljava/lang/String;";
+        }
+        System.out.println("paramDesc :: " + paramDesc);
+    }
+
+    @Override
+    public void visitInsn(int opcode) {
+        if ((opcode >= IRETURN && opcode <= RETURN)) {
+            // pop & copy from stack == Return Object
+            if(opcode == LRETURN || opcode == DRETURN) {
+                // long or double
+                mv.visitInsn(Opcodes.DUP2);
+            }
+            else {
+                mv.visitInsn(Opcodes.DUP);
+            }
+            if(paramDesc != null) {
+                mv.visitMethodInsn(INVOKESTATIC, "java/lang/String", "valueOf", paramDesc, false);
+            }
+            mv.visitMethodInsn(INVOKESTATIC, "com/asm_sample/agent/returncheck/ReturnCheckPrinter", "displayReturn", "(Ljava/lang/String;)V", false);
+        }
+        mv.visitInsn(opcode);
+    }
+
+    private String parseDesc(String desc) {
+        String returnDesc = Type.getReturnType(desc).getDescriptor();        
+        if(returnDesc.length() == 1) {
+            char descChar = returnDesc.charAt(0);            
+            switch(descChar) {
+                //use String.valueOf(int)
+                case 'B' :
+                case 'S' :
+                case 'I' :
+                    return "(I)Ljava/lang/String;";
+                default :
+                    return "(" + returnDesc + ")Ljava/lang/String;";
+            }
+
+        }
+        // String
+        else if(returnDesc.endsWith("String;")) {
+            return null;
+        }
+        // 그 외 Object
+        else {
+            return "(Ljava/lang/Object;)Ljava/lang/String;";
+        }
+    }
+}
 ```

@@ -17,4 +17,16 @@ public class ReturnCheckPrinter {
     public static void displayLocalVariable(String checkName, int arg1, String arg2) {
         CustomLogger.println("## [ReturnCheckPrinter::displayLocalVariable is called] checkName : {}, local1 : {}, local2 : {}", checkName, arg1, arg2);
     }
+
+    public static void displayReturn(Object returnVale, int idx) {
+        CustomLogger.println("## [ReturnCheckPrinter::displayReturn(Object returnVale, int idx)] returnValue : {}, idx : {}", returnVale, idx);
+    }
+
+    public static void displayReturn(Object returnVale) {
+        CustomLogger.println("## [ReturnCheckPrinter::displayReturn(Object returnVale] returnValue : {}", returnVale);
+    }
+
+    public static void displayReturn(String returnValue) {
+        CustomLogger.println("## [ReturnCheckPrinter::displayReturn(String returnVale] returnValue : {}", returnValue);
+    }
 }

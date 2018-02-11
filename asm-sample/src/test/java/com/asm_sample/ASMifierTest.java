@@ -1,6 +1,6 @@
 package com.asm_sample;
 
-import com.asm_sample.agent.returncheck.ReturnCheckPrinter;
+import com.asm_sample.proxy.SampleTestClass;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -13,12 +13,13 @@ public class ASMifierTest {
     Class<?> clazz;
     @Before
     public void setUp() {
-        // clazz = SampleTestClass.class;
+        clazz = SampleTestClass.class;
         // clazz = SampleClassProxy.class;
         // clazz = SampleClass.class;
         // clazz = TryCatchSample.class;
         // clazz = HookPrinter.class;
-        clazz = ReturnCheckPrinter.class;
+        // clazz = ReturnCheckPrinter.class;
+        // clazz = TestClass.class;
     }
 
     @Test
